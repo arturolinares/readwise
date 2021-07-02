@@ -200,6 +200,34 @@ impl Client {
     Ok(ret)
   }
 
+  /// Fetch all highlights created after a date.
+  /// The date will be passed as specified, so better use rfc3339.
+  pub fn highlights_highlighted_after(&self, page: i64, date_time: &str) -> Result<Vec<Highlight>> {
+    let mut ret: Vec<Highlight> = Vec::new();
+
+    let resp = signed_request(
+      &format!("/highlights?page={}&highlighted_at__gt={}", page, date_time),
+      &self.access_token,
+      Method::GET,
+      None,
+    )?;
+
+    if resp.status().is_success() {
+      let response_text = &resp.text()?;
+      let data: HighlightsResponse = serde_json::from_str(&response_text)?;
+
+      for highlight in data.results {
+        ret.push(highlight);
+      }
+    } else {
+      Err(anyhow!(
+        "Failed to fetch highlights with status code: {}.",
+        resp.status()
+      ))?
+    }
+    Ok(ret)
+  }
+
   /// Fetch a single book by ID
   pub fn book(&self, id: i64) -> Result<Book> {
     let resp = signed_request(
